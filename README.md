@@ -1,8 +1,10 @@
-# CATTI 助考助手 (CATTI Exam Assistant)
+# CATTI考试/外语翻译培训助手 (CATTI Exam/Foreign Language Translation Training Assistant)
+
+[中文版](README.md) | [English](README_en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-CATTI 助考助手是一款专为全国翻译专业资格（水平）考试（CATTI）备考者打造的智能全栈 Web 应用。借助前沿的 LLM（大语言模型）与 TTS（文本转语音）技术，它完美解决了翻译备考中**人工批改昂贵**和**口译全真模拟缺失**的两大核心痛点。
+CATTI考试/外语翻译培训助手是一款专为全国翻译专业资格（水平）考试（CATTI）备考者与翻译行业从业者打造的智能全栈 Web 应用。借助前沿的 LLM（大语言模型）与 TTS（文本转语音）技术，它完美解决了翻译备考与学习中**人工批改昂贵**和**口译全真模拟缺失**的两大核心痛点。
 
 ## ✨ 核心功能
 
@@ -42,8 +44,8 @@ CATTI 助考助手是一款专为全国翻译专业资格（水平）考试（CA
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/ZiXu000/Catti-.git
-cd Catti-
+git clone https://github.com/ZiXu000/CATTI-Exam-Foreign-Language-Translation-Training-Assistant .git
+cd CATTI-Exam-Foreign-Language-Translation-Training-Assistant
 ```
 
 ### 2. 后端服务启动
@@ -85,4 +87,4 @@ npm run dev
 本项目基于 [MIT License](LICENSE) 开源。欢迎任何人 Fork、修改或用于学习交流。
 
 ---
-*Developed with 💖 by ZiXu 子旭 and TRAE SOLO.*
+Developed with 💖 by ZiXu 子旭 
