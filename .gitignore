@@ -1,0 +1,10 @@
+node_modules/
+venv/
+__pycache__/
+*.pyc
+dist/
+.pytest_cache/
+.env
+catti_history.db
+catti_backup/
+catti_dev/
