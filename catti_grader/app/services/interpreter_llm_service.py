@@ -1,48 +1,45 @@
 import json
 import re
+import asyncio
 from openai import AsyncOpenAI
-from app.schemas.interpreter_schema import GenerateExamRequest, GenerateExamResponse, ComprehensiveExamData, PracticeExamData
+from app.schemas.interpreter_schema import GenerateExamRequest, GenerateExamResponse, ComprehensiveExamData, PracticeExamData, TrueFalseQuestion, MultipleChoiceQuestion, SummaryRubric
 
-PROMPT_MODE_A = """You are an Expert CATTI (China Accreditation Test for Translators and Interpreters) Interpretation Examiner for Level 2.
-Your task is to reverse-engineer a comprehensive exam based on the provided audio transcript.
-
-Exam Type: Comprehensive Capability (口译综合能力)
-
-You must generate the following:
-1. "true_or_false": 10 True/False statements based on the transcript.
-   - CRITICAL: You MUST design highly deceptive incorrect statements. Use techniques like: Phonetic similarity, Temporal inversion, Subject displacement. Document this in `distractor_logic`.
-2. "multiple_choice_short": 10 multiple choice questions based on short details.
-   - CRITICAL: Design tricky wrong options and explain the trap in `distractor_logic`.
-3. "multiple_choice_passage": 20 multiple choice questions based on the overall passage.
-   - CRITICAL: Design tricky wrong options and explain the trap in `distractor_logic`.
-4. "summary_rubric": Extract exactly 5 non-negotiable key scoring points for a 200-word summary of the transcript.
-
-CRITICAL (LANGUAGE): The text inside ALL `distractor_logic` fields and ALL `key_scoring_points` MUST be written entirely in Chinese (Simplified). The questions and options themselves should be in the original language (usually English).
-
-You MUST return a strictly formatted JSON object matching this schema:
+PROMPT_TF = """You are an Expert CATTI Interpretation Examiner for Level 2.
+Your task is to generate exactly 10 True/False questions based on the provided transcript.
+- CRITICAL: You MUST design highly deceptive incorrect statements. Use techniques like: Phonetic similarity, Temporal inversion, Subject displacement. Document this in `distractor_logic` (in Chinese).
+- Output valid JSON only:
 {{
-  "exam_type": "口译综合能力",
-  "audio_meta": {{"duration": int, "word_count": int}},
-  "questions": {{
-    "true_or_false": [
-      {{ "id": "q1", "statement": "...", "answer": "True" | "False", "distractor_logic": "...", "timestamp_ref": "..." }}
-    ],
-    "multiple_choice_short": [
-      {{ "id": "q11", "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "A", "distractor_logic": "..." }}
-    ],
-    "multiple_choice_passage": [
-      {{ "id": "q21", "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "B", "distractor_logic": "..." }}
-    ],
-    "summary_rubric": {{
-      "source_word_count": int,
-      "required_word_count_target": 200,
-      "key_scoring_points": ["1. ...", "2. ...", "3. ...", "4. ...", "5. ..."]
-    }}
+  "true_or_false": [
+    {{ "id": "q1", "statement": "...", "answer": "True", "distractor_logic": "...", "timestamp_ref": "..." }}
+  ]
+}}
+"""
+
+PROMPT_MC = """You are an Expert CATTI Interpretation Examiner for Level 2.
+Your task is to generate exactly 30 multiple choice questions (10 short detail, 20 passage) based on the provided transcript.
+- CRITICAL: Design tricky wrong options and explain the trap in `distractor_logic` (in Chinese).
+- Output valid JSON only:
+{{
+  "multiple_choice_short": [
+    {{ "id": "mc_s_1", "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "A", "distractor_logic": "..." }}
+  ],
+  "multiple_choice_passage": [
+    {{ "id": "mc_p_1", "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "B", "distractor_logic": "..." }}
+  ]
+}}
+"""
+
+PROMPT_SUMMARY = """You are an Expert CATTI Interpretation Examiner for Level 2.
+Your task is to extract exactly 5 non-negotiable key scoring points for a 200-word summary of the provided transcript.
+- CRITICAL: `key_scoring_points` MUST be written in Chinese.
+- Output valid JSON only:
+{{
+  "summary_rubric": {{
+    "source_word_count": 500,
+    "required_word_count_target": 200,
+    "key_scoring_points": ["1. ...", "2. ...", "3. ...", "4. ...", "5. ..."]
   }}
 }}
-
-CRITICAL (JSON SYNTAX): NEVER use double quotes (") inside any string value. You MUST use single quotes (') or Chinese quotes (‘’/“”) for inner quotations. Using inner double quotes will break the JSON parser and fail the system.
-You MUST output ONLY valid JSON without any markdown code block wrappers.
 """
 
 PROMPT_MODE_B = """You are an Expert CATTI (China Accreditation Test for Translators and Interpreters) Interpretation Examiner for Level 2.
@@ -71,56 +68,77 @@ CRITICAL (JSON SYNTAX): NEVER use double quotes (") inside any string value. You
 You MUST output ONLY valid JSON without any markdown code block wrappers.
 """
 
+def _clean_json_string(raw_text: str) -> str:
+    match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return raw_text.strip()
+
+async def safe_call_llm(client: AsyncOpenAI, model: str, system_prompt: str, user_text: str, extra_body: dict):
+    if not user_text.strip():
+        return {}
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Transcript:\n{user_text}"}
+            ],
+            response_format={"type": "json_object"},
+            extra_body=extra_body,
+            temperature=0.3
+        )
+        return json.loads(_clean_json_string(response.choices[0].message.content))
+    except Exception as e:
+        print(f"Error calling LLM: {e}")
+        return {}
+
 async def generate_exam(request: GenerateExamRequest) -> GenerateExamResponse:
     if request.provider == "mimo":
         base_url = "https://api.xiaomimimo.com/v1"
         model = "mimo-v2.5-pro"
         extra_body = {"thinking": {"type": "disabled"}}
     else:
-        # Default to DeepSeek
         base_url = "https://api.deepseek.com"
-        model = "deepseek-chat" # or deepseek-reasoner based on availability. Let's use chat to save time/cost. Or deepseek-v4-pro if that's what was used.
-        # Actually deepseek.py used deepseek-v4-pro but deepseek-chat is standard. Let's use deepseek-chat.
+        model = "deepseek-chat"
         extra_body = {}
 
-    client = AsyncOpenAI(
-        api_key=request.api_key,
-        base_url=base_url
-    )
+    client = AsyncOpenAI(api_key=request.api_key, base_url=base_url)
 
-    system_prompt = PROMPT_MODE_A if request.exam_type == "口译综合能力" else PROMPT_MODE_B
-
-    try:
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Here is the transcript:\n\n{request.transcript}"}
-            ],
-            response_format={"type": "json_object"},
-            extra_body=extra_body,
-            temperature=0.3
+    if request.exam_type == "口译实务":
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": PROMPT_MODE_B},
+                    {"role": "user", "content": f"Transcript:\n\n{request.transcript}"}
+                ],
+                response_format={"type": "json_object"},
+                extra_body=extra_body,
+                temperature=0.3
+            )
+            parsed_data = json.loads(_clean_json_string(response.choices[0].message.content))
+            return GenerateExamResponse(**parsed_data)
+        except Exception as e:
+            raise ValueError(f"LLM API Error: {str(e)}")
+            
+    else:
+        # Comprehensive Exam: Parallel Calls
+        tf_task = safe_call_llm(client, model, PROMPT_TF, request.true_false_transcript, extra_body)
+        mc_task = safe_call_llm(client, model, PROMPT_MC, request.multiple_choice_transcript, extra_body)
+        sum_task = safe_call_llm(client, model, PROMPT_SUMMARY, request.summary_transcript, extra_body)
+        
+        tf_res, mc_res, sum_res = await asyncio.gather(tf_task, mc_task, sum_task)
+        
+        comp_data = ComprehensiveExamData(
+            true_or_false=[TrueFalseQuestion(**q) for q in tf_res.get("true_or_false", [])],
+            multiple_choice_short=[MultipleChoiceQuestion(**q) for q in mc_res.get("multiple_choice_short", [])],
+            multiple_choice_passage=[MultipleChoiceQuestion(**q) for q in mc_res.get("multiple_choice_passage", [])],
+            summary_rubric=SummaryRubric(**sum_res.get("summary_rubric", {"source_word_count": 0, "required_word_count_target": 200, "key_scoring_points": []})) if sum_res.get("summary_rubric") else SummaryRubric(source_word_count=0, required_word_count_target=200, key_scoring_points=[])
         )
-    except Exception as e:
-        raise ValueError(f"LLM API Error: {str(e)}")
-
-    response_content = response.choices[0].message.content
-    try:
-        cleaned_content = response_content.strip()
-        if cleaned_content.startswith("```json"):
-            cleaned_content = cleaned_content[7:]
-        elif cleaned_content.startswith("```"):
-            cleaned_content = cleaned_content[3:]
-        if cleaned_content.endswith("```"):
-            cleaned_content = cleaned_content[:-3]
         
-        # Fallback sanitization
-        cleaned_content = re.sub(r'(?<=[\u4e00-\u9fa5])"(?=[\u4e00-\u9fa5])', "'", cleaned_content)
-        cleaned_content = re.sub(r'(?<=[a-zA-Z\u4e00-\u9fa5])"(?=[a-zA-Z\u4e00-\u9fa5])', "'", cleaned_content)
-        # Simplify the aggressive regex that breaks valid JSON keys
-        # We'll just rely on the first two regexes and the prompt constraint for now.
-        
-        parsed_data = json.loads(cleaned_content.strip())
-        return GenerateExamResponse(**parsed_data)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Failed to parse JSON from LLM response: {e}\nContent: {response_content}")
+        return GenerateExamResponse(
+            exam_type="口译综合能力",
+            audio_meta={"duration": 0, "word_count": 0},
+            questions=comp_data
+        )

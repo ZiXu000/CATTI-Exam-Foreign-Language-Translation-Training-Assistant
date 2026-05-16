@@ -7,11 +7,23 @@ interface InterpretationSectionProps {
   provider: 'deepseek' | 'mimo';
   apiKey: string;
   t: any;
-  initialRecord?: { transcript: string, result: GenerateExamResponse, ttsCache?: Record<string, string>, answers?: Record<string, string> } | null;
+  initialRecord?: { 
+    transcript?: string, 
+    true_false_transcript?: string,
+    multiple_choice_transcript?: string,
+    summary_transcript?: string,
+    result: GenerateExamResponse, 
+    ttsCache?: Record<string, string>, 
+    answers?: Record<string, string> 
+  } | null;
 }
 
 export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ provider, apiKey, t, initialRecord }) => {
   const [transcript, setTranscript] = useState('');
+  const [tfTranscript, setTfTranscript] = useState('');
+  const [mcTranscript, setMcTranscript] = useState('');
+  const [sumTranscript, setSumTranscript] = useState('');
+
   const [examType, setExamType] = useState<'口译综合能力' | '口译实务'>('口译综合能力');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +42,9 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
   useEffect(() => {
     if (initialRecord) {
       setTranscript(initialRecord.transcript || '');
+      setTfTranscript(initialRecord.true_false_transcript || '');
+      setMcTranscript(initialRecord.multiple_choice_transcript || '');
+      setSumTranscript(initialRecord.summary_transcript || '');
       setResult(initialRecord.result);
       if (initialRecord.result.exam_type) {
         setExamType(initialRecord.result.exam_type as '口译综合能力' | '口译实务');
@@ -46,8 +61,12 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
   }, [initialRecord]);
 
   const handleGenerate = async () => {
-    if (!transcript.trim()) {
+    if (examType === '口译实务' && !transcript.trim()) {
       setError('Please provide the audio transcript.');
+      return;
+    }
+    if (examType === '口译综合能力' && !tfTranscript.trim() && !mcTranscript.trim() && !sumTranscript.trim()) {
+      setError('Please provide at least one source transcript.');
       return;
     }
     if (!apiKey.trim()) {
@@ -62,6 +81,9 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
     try {
       const data = await generateExam({
         transcript,
+        true_false_transcript: tfTranscript,
+        multiple_choice_transcript: mcTranscript,
+        summary_transcript: sumTranscript,
         exam_type: examType,
         provider,
         api_key: apiKey
@@ -110,6 +132,9 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
         exam_type: result.exam_type,
         content: JSON.stringify({
           transcript: transcript,
+          true_false_transcript: tfTranscript,
+          multiple_choice_transcript: mcTranscript,
+          summary_transcript: sumTranscript,
           result: result,
           ttsCache: ttsCache,
           answers: answers
@@ -129,7 +154,6 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
   const renderTrueFalse = (questions: any[]) => {
     return (
       <div className="space-y-4">
-        <h3 className="font-bold text-lg text-slate-800 border-b pb-2">{t.trueFalseQuestions}</h3>
         {questions.map((q, idx) => {
           const userAnswer = answers[q.id];
           const isCorrect = userAnswer === q.answer;
@@ -197,7 +221,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
     if (!questions || questions.length === 0) return null;
     return (
       <div className="space-y-4 mt-8">
-        <h3 className="font-bold text-lg text-slate-800 border-b pb-2">{title}</h3>
+        <h4 className="font-bold text-md text-slate-700">{title}</h4>
         {questions.map((q, idx) => {
           const userAnswer = answers[q.id];
           const isCorrect = userAnswer && userAnswer.startsWith(q.correct_answer);
@@ -268,8 +292,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
     if (examState !== 'results') return null;
     
     return (
-      <div className="space-y-4 mt-8">
-        <h3 className="font-bold text-lg text-slate-800 border-b pb-2">{t.summaryRubricTitle}</h3>
+      <div className="space-y-4">
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
           <p className="text-sm text-blue-800 font-medium">Source Word Count: {rubric.source_word_count}</p>
           <p className="text-sm text-blue-800 font-medium">Target Word Count: {rubric.required_word_count_target}</p>
@@ -365,6 +388,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
         </div>
       )}
 
+      {/* Left Input Section */}
       <section className={`${!result ? 'flex-1' : isSidebarOpen ? 'w-[40%]' : 'hidden'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 relative shrink-0 overflow-hidden`}>
         {/* Toggle Button */}
         {result && (
@@ -377,30 +401,31 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
           </button>
         )}
 
-        <div className="flex flex-col h-full p-6">
-          <div className="flex items-center justify-between mb-4 pr-8">
-              <label htmlFor="transcript" className="text-sm font-semibold text-slate-700 tracking-wide uppercase flex items-center">
-                <FileText size={16} className="mr-2" />
-                {t.interpTranscriptLabel}
-              </label>
-              <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                <button
-                  onClick={() => setExamType('口译综合能力')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${examType === '口译综合能力' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  disabled={examState !== 'input'}
-                >
-                  {t.examTypeComprehensive}
-                </button>
-                <button
-                  onClick={() => setExamType('口译实务')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${examType === '口译实务' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  disabled={examState !== 'input'}
-                >
-                  {t.examTypePractice}
-                </button>
-              </div>
+        <div className="flex flex-col h-full p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-4 pr-8 shrink-0">
+            <label htmlFor="transcript" className="text-sm font-semibold text-slate-700 tracking-wide uppercase flex items-center">
+              <FileText size={16} className="mr-2" />
+              {examType === '口译实务' ? t.interpTranscriptLabel : "Source Transcripts"}
+            </label>
+            <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setExamType('口译综合能力')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${examType === '口译综合能力' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                disabled={examState !== 'input'}
+              >
+                {t.examTypeComprehensive}
+              </button>
+              <button
+                onClick={() => setExamType('口译实务')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${examType === '口译实务' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                disabled={examState !== 'input'}
+              >
+                {t.examTypePractice}
+              </button>
             </div>
+          </div>
 
+          {examType === '口译实务' ? (
             <textarea
               id="transcript"
               value={transcript}
@@ -409,22 +434,54 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
               placeholder={t.interpTranscriptPlaceholder}
               disabled={isLoading || examState !== 'input'}
             />
+          ) : (
+            <div className="flex-1 flex flex-col space-y-4 mb-4">
+              <div className="flex flex-col flex-1">
+                <label className="text-xs font-semibold text-slate-600 mb-1">{t.interpTfTranscriptLabel}</label>
+                <textarea
+                  value={tfTranscript}
+                  onChange={(e) => setTfTranscript(e.target.value)}
+                  className="flex-1 w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-xs leading-relaxed"
+                  disabled={isLoading || examState !== 'input'}
+                />
+              </div>
+              <div className="flex flex-col flex-1">
+                <label className="text-xs font-semibold text-slate-600 mb-1">{t.interpMcTranscriptLabel}</label>
+                <textarea
+                  value={mcTranscript}
+                  onChange={(e) => setMcTranscript(e.target.value)}
+                  className="flex-1 w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-xs leading-relaxed"
+                  disabled={isLoading || examState !== 'input'}
+                />
+              </div>
+              <div className="flex flex-col flex-1">
+                <label className="text-xs font-semibold text-slate-600 mb-1">{t.interpSumTranscriptLabel}</label>
+                <textarea
+                  value={sumTranscript}
+                  onChange={(e) => setSumTranscript(e.target.value)}
+                  className="flex-1 w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-xs leading-relaxed"
+                  disabled={isLoading || examState !== 'input'}
+                />
+              </div>
+            </div>
+          )}
 
-            {examState === 'input' ? (
-              <button
-                onClick={handleGenerate}
-                disabled={!transcript.trim() || isLoading}
-                className="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg tracking-wide shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Play size={20} fill="currentColor" />
-                )}
-                <span>{isLoading ? t.interpGeneratingBtn : t.interpGenerateBtn}</span>
-              </button>
-            ) : (
-              <div className="flex items-center space-x-3">
+          {examState === 'input' ? (
+            <button
+              onClick={handleGenerate}
+              disabled={(examType === '口译实务' ? !transcript.trim() : (!tfTranscript.trim() && !mcTranscript.trim() && !sumTranscript.trim())) || isLoading}
+              className="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg tracking-wide shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shrink-0"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <Play size={20} fill="currentColor" />
+              )}
+              <span>{isLoading ? t.interpGeneratingBtn : t.interpGenerateBtn}</span>
+            </button>
+          ) : (
+            <div className="flex items-center space-x-3 shrink-0">
+              {examType === '口译实务' && transcript.trim() && (
                 <button
                   onClick={() => handlePlayTTS('full-transcript', transcript)}
                   disabled={playingAudioId === 'full-transcript'}
@@ -433,19 +490,21 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
                   <Volume2 size={20} className={playingAudioId === 'full-transcript' ? "animate-pulse" : ""} />
                   <span>Play Audio</span>
                 </button>
-                <button
-                  onClick={() => {
-                    setResult(null);
-                    setExamState('input');
-                    setIsSidebarOpen(true);
-                  }}
-                  className="flex-1 py-4 px-6 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-lg tracking-wide transition-all flex items-center justify-center space-x-2"
-                >
-                  Reset
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+              <button
+                onClick={() => {
+                  setResult(null);
+                  setExamState('input');
+                  setIsSidebarOpen(true);
+                  setAnswers({});
+                }}
+                className="flex-1 py-4 px-6 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-lg tracking-wide transition-all flex items-center justify-center space-x-2"
+              >
+                Reset
+              </button>
+            </div>
+          )}
+        </div>
       </section>
 
       {result && (
@@ -477,12 +536,59 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
           
           <div className="flex-1 overflow-y-auto p-6">
             {result.exam_type === '口译综合能力' && result.questions && (
-              <>
-                {renderTrueFalse(result.questions.true_or_false)}
-                {renderMultipleChoice(t.multipleChoiceShort, result.questions.multiple_choice_short)}
-                {renderMultipleChoice(t.multipleChoicePassage, result.questions.multiple_choice_passage)}
-                {renderSummaryRubric(result.questions.summary_rubric)}
-              </>
+              <div className="space-y-12">
+                <div>
+                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                    <h3 className="font-black text-xl text-slate-800">{t.trueFalseQuestions}</h3>
+                    {tfTranscript.trim() && (
+                      <button
+                        onClick={() => handlePlayTTS('tf-transcript', tfTranscript)}
+                        disabled={playingAudioId === 'tf-transcript'}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                      >
+                        <Volume2 size={14} className={playingAudioId === 'tf-transcript' ? "animate-pulse" : ""} />
+                        <span>Play Audio</span>
+                      </button>
+                    )}
+                  </div>
+                  {renderTrueFalse(result.questions.true_or_false)}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                    <h3 className="font-black text-xl text-slate-800">Multiple Choice</h3>
+                    {mcTranscript.trim() && (
+                      <button
+                        onClick={() => handlePlayTTS('mc-transcript', mcTranscript)}
+                        disabled={playingAudioId === 'mc-transcript'}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                      >
+                        <Volume2 size={14} className={playingAudioId === 'mc-transcript' ? "animate-pulse" : ""} />
+                        <span>Play Audio</span>
+                      </button>
+                    )}
+                  </div>
+                  {renderMultipleChoice(t.multipleChoiceShort, result.questions.multiple_choice_short)}
+                  {renderMultipleChoice(t.multipleChoicePassage, result.questions.multiple_choice_passage)}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                    <h3 className="font-black text-xl text-slate-800">{t.summaryRubricTitle}</h3>
+                    {sumTranscript.trim() && (
+                      <button
+                        onClick={() => handlePlayTTS('sum-transcript', sumTranscript)}
+                        disabled={playingAudioId === 'sum-transcript'}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                      >
+                        <Volume2 size={14} className={playingAudioId === 'sum-transcript' ? "animate-pulse" : ""} />
+                        <span>Play Audio</span>
+                      </button>
+                    )}
+                  </div>
+                  {renderSummaryRubric(result.questions.summary_rubric)}
+                </div>
+              </div>
             )}
             
             {result.exam_type === '口译实务' && result.practice_data && (

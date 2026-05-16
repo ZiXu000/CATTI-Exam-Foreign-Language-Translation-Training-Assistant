@@ -37,7 +37,10 @@ class PracticeExamData(BaseModel):
 
 class GenerateExamRequest(BaseModel):
     exam_type: Literal["口译综合能力", "口译实务"]
-    transcript: str
+    transcript: str = ""
+    true_false_transcript: str = ""
+    multiple_choice_transcript: str = ""
+    summary_transcript: str = ""
     provider: Literal["deepseek", "mimo"] = "deepseek"
     api_key: str
 

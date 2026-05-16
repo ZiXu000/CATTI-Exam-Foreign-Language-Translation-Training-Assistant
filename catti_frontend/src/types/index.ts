@@ -71,7 +71,10 @@ export interface PracticeExamData {
 
 export interface GenerateExamRequest {
   exam_type: '口译综合能力' | '口译实务';
-  transcript: string;
+  transcript?: string;
+  true_false_transcript?: string;
+  multiple_choice_transcript?: string;
+  summary_transcript?: string;
   provider: 'deepseek' | 'mimo';
   api_key: string;
 }
