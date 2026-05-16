@@ -6,7 +6,7 @@ import { HistorySection } from './components/HistorySection';
 import { WrittenCompSection } from './components/WrittenCompSection';
 import { gradeTranslation, saveExamRecord, getExamRecords } from './api';
 import { GraderResponse, EvaluationItem } from './types';
-import { GraduationCap, Key, Settings, Globe, Timer, Play, ArrowLeft, PenTool, Mic, BookOpen, Clock, FileText } from 'lucide-react';
+import { GraduationCap, Key, Settings, Globe, Timer, Play, ArrowLeft, PenTool, Mic, BookOpen, Clock } from 'lucide-react';
 import { translations, LanguageKey } from './i18n';
 
 function App() {
@@ -47,6 +47,8 @@ function App() {
         .catch(err => console.error("Failed to fetch recent records:", err));
     }
   }, [currentPage]);
+
+  const [writtenMode, setWrittenMode] = useState<'translate' | 'comprehensive'>('translate');
 
   // Timer logic
   useEffect(() => {
@@ -290,17 +292,6 @@ function App() {
                 <h2 className="text-2xl font-black text-slate-800 mb-2">{t.homeInterpMode}</h2>
                 <p className="text-slate-500 font-medium">{t.homeInterpDesc}</p>
               </button>
-
-              <button 
-                onClick={() => setCurrentPage('written_comp')}
-                className="group flex flex-col items-center justify-center p-12 bg-white rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:border-purple-500 hover:-translate-y-2 transition-all md:col-span-2"
-              >
-                <div className="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
-                  <FileText size={40} className="text-purple-600 group-hover:text-white transition-colors" />
-                </div>
-                <h2 className="text-2xl font-black text-slate-800 mb-2">{t.homeWrittenCompMode}</h2>
-                <p className="text-slate-500 font-medium">{t.homeWrittenCompDesc}</p>
-              </button>
               
               <button 
                 onClick={() => setCurrentPage('history')}
@@ -367,10 +358,6 @@ function App() {
           <InterpretationSection provider={provider} apiKey={apiKey} t={t} initialRecord={interpRecordToLoad} />
         )}
 
-        {currentPage === 'written_comp' && (
-          <WrittenCompSection provider={provider} apiKey={apiKey} t={t} initialRecord={writtenCompRecordToLoad} />
-        )}
-
         {currentPage === 'history' && (
           <HistorySection 
             t={t} 
@@ -381,6 +368,7 @@ function App() {
                   setSourceText(content.source_text || '');
                   setUserTranslation(content.user_translation || '');
                   setResult(content.result || null);
+                  setWrittenMode('translate');
                   setCurrentPage('written');
                 } else if (record.exam_type === '笔译综合能力') {
                   setWrittenCompRecordToLoad({
@@ -390,7 +378,8 @@ function App() {
                     result: content.result,
                     answers: content.answers || {}
                   });
-                  setCurrentPage('written_comp');
+                  setWrittenMode('comprehensive');
+                  setCurrentPage('written');
                 } else {
                   let parsedResult = content;
                   let parsedTranscript = '';
@@ -418,125 +407,148 @@ function App() {
         )}
 
         {currentPage === 'written' && (
-          <div className="flex-1 relative flex flex-col lg:flex-row gap-6">
-            
-            {/* Start Timer overlay if Timer is enabled and not active */}
-            {timerEnabled && !examActive && !result && !isLoading && !error && (
-              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center space-y-8 p-12 text-center bg-slate-50/95 backdrop-blur-sm rounded-xl border border-slate-200">
-                <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shadow-inner">
-                  <Timer size={48} />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase mb-2">{t.examMode}</h2>
-                  <p className="text-slate-600 text-lg font-medium">{timerMinutes} {t.timerMinutes}</p>
-                </div>
+          <div className="flex-1 relative flex flex-col h-full overflow-hidden">
+            {/* Mode Switcher inside Written Page */}
+            <div className="flex justify-center mb-6 shrink-0">
+              <div className="bg-slate-200 p-1 rounded-lg inline-flex">
                 <button
-                  onClick={startExam}
-                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xl tracking-wide shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-1 transition-all flex items-center space-x-3"
+                  onClick={() => setWrittenMode('translate')}
+                  className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${writtenMode === 'translate' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  <Play size={24} fill="currentColor" />
-                  <span>{t.startTranslation}</span>
+                  {t.homeWrittenMode}
+                </button>
+                <button
+                  onClick={() => setWrittenMode('comprehensive')}
+                  className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${writtenMode === 'comprehensive' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {t.homeWrittenCompMode}
                 </button>
               </div>
-            )}
+            </div>
 
-            {/* Editing Layout (No Result, Not Loading) */}
-            {(!result && !isLoading && !error) ? (
-              <div className="w-full flex-1 flex gap-6">
-                <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <div className="flex flex-col space-y-2 flex-1 relative">
-                    <label htmlFor="userTranslation" className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
-                      {t.userTranslationLabel}
-                    </label>
-                    <textarea
-                      id="userTranslation"
-                      value={userTranslation}
-                      onChange={(e) => setUserTranslation(e.target.value)}
-                      className="flex-1 w-full p-4 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"
-                      placeholder={t.userTranslationPlaceholder}
-                    />
-                  </div>
-                </section>
-                <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <div className="flex flex-col space-y-2 flex-1 relative">
-                    <label htmlFor="sourceText" className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
-                      {t.sourceTextLabel}
-                    </label>
-                    <textarea
-                      id="sourceText"
-                      value={sourceText}
-                      onChange={(e) => setSourceText(e.target.value)}
-                      className="flex-1 w-full p-4 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"
-                      placeholder={t.sourceTextPlaceholder}
-                    />
-                  </div>
-                </section>
-
-                {/* Floating Action Button for Submit */}
-                <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group">
-                  <div className="bg-slate-800 text-white w-[40px] h-full rounded-l-xl shadow-xl flex items-center justify-center cursor-pointer group-hover:bg-slate-700">
-                    <span className="[writing-mode:vertical-lr] font-bold text-sm tracking-widest uppercase rotate-180 whitespace-nowrap">{t.evaluateAction}</span>
-                  </div>
-                  <div className="bg-slate-900 p-4 shadow-2xl h-full flex flex-col justify-center">
+            {writtenMode === 'translate' ? (
+              <div className="flex-1 relative flex flex-col lg:flex-row gap-6 min-h-0">
+                {/* Start Timer overlay if Timer is enabled and not active */}
+                {timerEnabled && !examActive && !result && !isLoading && !error && (
+                  <div className="absolute inset-0 z-50 flex flex-col items-center justify-center space-y-8 p-12 text-center bg-slate-50/95 backdrop-blur-sm rounded-xl border border-slate-200">
+                    <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shadow-inner">
+                      <Timer size={48} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase mb-2">{t.examMode}</h2>
+                      <p className="text-slate-600 text-lg font-medium">{timerMinutes} {t.timerMinutes}</p>
+                    </div>
                     <button
-                      onClick={() => handleEvaluate(false)}
-                      disabled={!sourceText.trim() || !userTranslation.trim()}
-                      className="py-3 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                      onClick={startExam}
+                      className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xl tracking-wide shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-1 transition-all flex items-center space-x-3"
                     >
-                      {t.submitExam}
+                      <Play size={24} fill="currentColor" />
+                      <span>{t.startTranslation}</span>
                     </button>
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Evaluation Phase Layout (40% Input Stacked, 60% Report) */
-              <div className="w-full flex-1 flex gap-6">
-                <section className="w-[40%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-y-auto">
-                  <InputSection
-                    sourceText={sourceText}
-                    setSourceText={setSourceText}
-                    userTranslation={userTranslation}
-                    setUserTranslation={setUserTranslation}
-                    onSubmit={() => handleEvaluate(false)}
-                    isLoading={isLoading}
-                    hoveredEvaluation={hoveredEvaluation}
-                    t={t}
-                    isExamMode={timerEnabled}
-                    hideButton={true}
-                  />
-                </section>
+                )}
 
-                <section className="w-[60%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500">
-                  <ResultSection
-                    result={result}
-                    error={error}
-                    isLoading={isLoading}
-                    onHoverEvaluation={setHoveredEvaluation}
-                    t={t}
-                  />
-                </section>
+                {/* Editing Layout (No Result, Not Loading) */}
+                {(!result && !isLoading && !error) ? (
+                  <div className="w-full flex-1 flex gap-6">
+                    <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
+                      <div className="flex flex-col space-y-2 flex-1 relative">
+                        <label htmlFor="userTranslation" className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+                          {t.userTranslationLabel}
+                        </label>
+                        <textarea
+                          id="userTranslation"
+                          value={userTranslation}
+                          onChange={(e) => setUserTranslation(e.target.value)}
+                          className="flex-1 w-full p-4 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"
+                          placeholder={t.userTranslationPlaceholder}
+                        />
+                      </div>
+                    </section>
+                    <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
+                      <div className="flex flex-col space-y-2 flex-1 relative">
+                        <label htmlFor="sourceText" className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+                          {t.sourceTextLabel}
+                        </label>
+                        <textarea
+                          id="sourceText"
+                          value={sourceText}
+                          onChange={(e) => setSourceText(e.target.value)}
+                          className="flex-1 w-full p-4 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"
+                          placeholder={t.sourceTextPlaceholder}
+                        />
+                      </div>
+                    </section>
 
-                {/* Floating Action Button for Retake */}
-                {!isLoading && (
-                  <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group">
-                    <div className="bg-slate-800 text-white w-[40px] h-full rounded-l-xl shadow-xl flex items-center justify-center cursor-pointer group-hover:bg-slate-700">
-                      <span className="[writing-mode:vertical-lr] font-bold text-sm tracking-widest uppercase rotate-180 whitespace-nowrap">{t.retakeAction}</span>
+                    {/* Floating Action Button for Submit */}
+                    <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group">
+                      <div className="bg-slate-800 text-white w-[40px] h-full rounded-l-xl shadow-xl flex items-center justify-center cursor-pointer group-hover:bg-slate-700">
+                        <span className="[writing-mode:vertical-lr] font-bold text-sm tracking-widest uppercase rotate-180 whitespace-nowrap">{t.evaluateAction}</span>
+                      </div>
+                      <div className="bg-slate-900 p-4 shadow-2xl h-full flex flex-col justify-center">
+                        <button
+                          onClick={() => handleEvaluate(false)}
+                          disabled={!sourceText.trim() || !userTranslation.trim()}
+                          className="py-3 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                        >
+                          {t.submitExam}
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-slate-900 p-4 shadow-2xl h-full flex flex-col justify-center">
-                      <button
-                        onClick={() => {
-                          setResult(null);
-                          setError(null);
-                          if (timerEnabled) setExamActive(false);
-                        }}
-                        className="py-3 px-6 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition-all whitespace-nowrap"
-                      >
-                        {t.retakeExam}
-                      </button>
-                    </div>
+                  </div>
+                ) : (
+                  /* Evaluation Phase Layout (40% Input Stacked, 60% Report) */
+                  <div className="w-full flex-1 flex gap-6 min-h-0">
+                    <section className="w-[40%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-y-auto">
+                      <InputSection
+                        sourceText={sourceText}
+                        setSourceText={setSourceText}
+                        userTranslation={userTranslation}
+                        setUserTranslation={setUserTranslation}
+                        onSubmit={() => handleEvaluate(false)}
+                        isLoading={isLoading}
+                        hoveredEvaluation={hoveredEvaluation}
+                        t={t}
+                        isExamMode={timerEnabled}
+                        hideButton={true}
+                      />
+                    </section>
+
+                    <section className="w-[60%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500">
+                      <ResultSection
+                        result={result}
+                        error={error}
+                        isLoading={isLoading}
+                        onHoverEvaluation={setHoveredEvaluation}
+                        t={t}
+                      />
+                    </section>
+
+                    {/* Floating Action Button for Retake */}
+                    {!isLoading && (
+                      <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group">
+                        <div className="bg-slate-800 text-white w-[40px] h-full rounded-l-xl shadow-xl flex items-center justify-center cursor-pointer group-hover:bg-slate-700">
+                          <span className="[writing-mode:vertical-lr] font-bold text-sm tracking-widest uppercase rotate-180 whitespace-nowrap">{t.retakeAction}</span>
+                        </div>
+                        <div className="bg-slate-900 p-4 shadow-2xl h-full flex flex-col justify-center">
+                          <button
+                            onClick={() => {
+                              setResult(null);
+                              setError(null);
+                              if (timerEnabled) setExamActive(false);
+                            }}
+                            className="py-3 px-6 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition-all whitespace-nowrap"
+                          >
+                            {t.retakeExam}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+            ) : (
+              <WrittenCompSection provider={provider} apiKey={apiKey} t={t} initialRecord={writtenCompRecordToLoad} />
             )}
           </div>
         )}
