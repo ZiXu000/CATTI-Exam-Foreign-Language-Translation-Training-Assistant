@@ -1,4 +1,4 @@
-import { GraderResponse, TranslationRequest, GenerateExamRequest, GenerateExamResponse } from '../types';
+import { GraderResponse, TranslationRequest, GenerateExamRequest, GenerateExamResponse, GenerateWrittenCompRequest, GenerateWrittenCompResponse } from '../types';
 
 const API_BASE_URL = '/api/v1';
 
@@ -21,6 +21,23 @@ export const gradeTranslation = async (data: TranslationRequest): Promise<Grader
 
 export const generateExam = async (data: GenerateExamRequest): Promise<GenerateExamResponse> => {
   const response = await fetch(`${API_BASE_URL}/generate_exam`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail || `API request failed with status ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const generateWrittenComp = async (data: GenerateWrittenCompRequest): Promise<GenerateWrittenCompResponse> => {
+  const response = await fetch(`${API_BASE_URL}/written_comp/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

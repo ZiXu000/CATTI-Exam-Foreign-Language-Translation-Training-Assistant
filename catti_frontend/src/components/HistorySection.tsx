@@ -93,6 +93,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({ t, onLoadRecord 
             <option value="written">{t.homeWrittenMode}</option>
             <option value="口译综合能力">{t.examTypeComprehensive}</option>
             <option value="口译实务">{t.examTypePractice}</option>
+            <option value="笔译综合能力">{t.homeWrittenCompMode}</option>
           </select>
           
           <button 
@@ -125,7 +126,10 @@ export const HistorySection: React.FC<HistorySectionProps> = ({ t, onLoadRecord 
             {filteredRecords.map(record => (
               <div key={record.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 <div className="flex justify-between items-start mb-3">
-                  <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md uppercase tracking-wider">
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider ${
+                    record.exam_type === 'written' ? 'bg-blue-50 text-blue-700' : 
+                    record.exam_type === '笔译综合能力' ? 'bg-purple-50 text-purple-700' : 'bg-emerald-50 text-emerald-700'
+                  }`}>
                     {record.exam_type === 'written' ? t.historyTypeWritten : record.exam_type}
                   </span>
                   <div className="flex items-center space-x-2">
@@ -153,6 +157,8 @@ export const HistorySection: React.FC<HistorySectionProps> = ({ t, onLoadRecord 
                       const content = JSON.parse(record.content);
                       if (record.exam_type === 'written') {
                         return content.user_translation || content.source_text || t.historyPreviewUnavailable;
+                      } else if (record.exam_type === '笔译综合能力') {
+                        return content.vocab_text || content.reading_text || content.cloze_text || t.historyPreviewUnavailable;
                       } else {
                         return content.transcript || (t.homeInterpMode + " Exam Record");
                       }

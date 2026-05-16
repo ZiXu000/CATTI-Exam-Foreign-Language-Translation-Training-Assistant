@@ -3,9 +3,10 @@ import { InputSection } from './components/InputSection';
 import { ResultSection } from './components/ResultSection';
 import { InterpretationSection } from './components/InterpretationSection';
 import { HistorySection } from './components/HistorySection';
+import { WrittenCompSection } from './components/WrittenCompSection';
 import { gradeTranslation, saveExamRecord, getExamRecords } from './api';
 import { GraderResponse, EvaluationItem } from './types';
-import { GraduationCap, Key, Settings, Globe, Timer, Play, ArrowLeft, PenTool, Mic, BookOpen, Clock } from 'lucide-react';
+import { GraduationCap, Key, Settings, Globe, Timer, Play, ArrowLeft, PenTool, Mic, BookOpen, Clock, FileText } from 'lucide-react';
 import { translations, LanguageKey } from './i18n';
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
   const [hoveredEvaluation, setHoveredEvaluation] = useState<EvaluationItem | null>(null);
 
   // Router state
-  const [currentPage, setCurrentPage] = useState<'home' | 'written' | 'interpretation' | 'history'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'written' | 'interpretation' | 'written_comp' | 'history'>('home');
 
   // Settings
   const [provider, setProvider] = useState<'deepseek' | 'mimo'>('deepseek');
@@ -34,6 +35,7 @@ function App() {
   // Recent History State
   const [recentExams, setRecentExams] = useState<any[]>([]);
   const [interpRecordToLoad, setInterpRecordToLoad] = useState<any>(null);
+  const [writtenCompRecordToLoad, setWrittenCompRecordToLoad] = useState<any>(null);
 
   const t = translations[language];
 
@@ -159,6 +161,7 @@ function App() {
     setSourceText('');
     setUserTranslation('');
     setInterpRecordToLoad(null);
+    setWrittenCompRecordToLoad(null);
   };
 
   return (
@@ -287,6 +290,17 @@ function App() {
                 <h2 className="text-2xl font-black text-slate-800 mb-2">{t.homeInterpMode}</h2>
                 <p className="text-slate-500 font-medium">{t.homeInterpDesc}</p>
               </button>
+
+              <button 
+                onClick={() => setCurrentPage('written_comp')}
+                className="group flex flex-col items-center justify-center p-12 bg-white rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:border-purple-500 hover:-translate-y-2 transition-all md:col-span-2"
+              >
+                <div className="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
+                  <FileText size={40} className="text-purple-600 group-hover:text-white transition-colors" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-800 mb-2">{t.homeWrittenCompMode}</h2>
+                <p className="text-slate-500 font-medium">{t.homeWrittenCompDesc}</p>
+              </button>
               
               <button 
                 onClick={() => setCurrentPage('history')}
@@ -316,7 +330,8 @@ function App() {
                     >
                       <div className="flex justify-between items-start mb-3">
                         <span className={`px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider ${
-                          record.exam_type === 'written' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
+                          record.exam_type === 'written' ? 'bg-blue-50 text-blue-700' : 
+                          record.exam_type === '笔译综合能力' ? 'bg-purple-50 text-purple-700' : 'bg-emerald-50 text-emerald-700'
                         }`}>
                           {record.exam_type === 'written' ? t.historyTypeWritten : record.exam_type}
                         </span>
@@ -330,6 +345,8 @@ function App() {
                             const content = JSON.parse(record.content);
                             if (record.exam_type === 'written') {
                               return content.user_translation || content.source_text || t.historyPreviewUnavailable;
+                            } else if (record.exam_type === '笔译综合能力') {
+                              return content.vocab_text || content.reading_text || content.cloze_text || t.historyPreviewUnavailable;
                             } else {
                               return content.transcript || (t.homeInterpMode + " Exam Record");
                             }
@@ -349,7 +366,11 @@ function App() {
         {currentPage === 'interpretation' && (
           <InterpretationSection provider={provider} apiKey={apiKey} t={t} initialRecord={interpRecordToLoad} />
         )}
-        
+
+        {currentPage === 'written_comp' && (
+          <WrittenCompSection provider={provider} apiKey={apiKey} t={t} initialRecord={writtenCompRecordToLoad} />
+        )}
+
         {currentPage === 'history' && (
           <HistorySection 
             t={t} 
@@ -361,6 +382,15 @@ function App() {
                   setUserTranslation(content.user_translation || '');
                   setResult(content.result || null);
                   setCurrentPage('written');
+                } else if (record.exam_type === '笔译综合能力') {
+                  setWrittenCompRecordToLoad({
+                    vocab_text: content.vocab_text || '',
+                    reading_text: content.reading_text || '',
+                    cloze_text: content.cloze_text || '',
+                    result: content.result,
+                    answers: content.answers || {}
+                  });
+                  setCurrentPage('written_comp');
                 } else {
                   let parsedResult = content;
                   let parsedTranscript = '';

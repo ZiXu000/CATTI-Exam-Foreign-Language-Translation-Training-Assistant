@@ -85,3 +85,61 @@ export interface GenerateExamResponse {
   questions?: ComprehensiveExamData;
   practice_data?: PracticeExamData;
 }
+
+// Written Comprehensive Module Types
+export interface VocabGrammarQuestion {
+  id: number;
+  type: "vocab_grammar";
+  stem: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
+export interface ReadingQuestion {
+  id: number;
+  stem: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+  location: string;
+}
+
+export interface ReadingPassage {
+  passageId: number;
+  title: string;
+  content: string;
+  questions: ReadingQuestion[];
+}
+
+export interface ClozeBlank {
+  position: number;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
+export interface ClozePassage {
+  passageId: number;
+  content: string;
+  blanks: ClozeBlank[];
+}
+
+export interface WrittenCompExamData {
+  vocab_grammar?: { questions: VocabGrammarQuestion[] };
+  reading?: { passages: ReadingPassage[] };
+  cloze?: { passage: ClozePassage };
+}
+
+export interface GenerateWrittenCompRequest {
+  vocab_text: string;
+  reading_text: string;
+  cloze_text: string;
+  provider: 'deepseek' | 'mimo';
+  api_key: string;
+}
+
+export interface GenerateWrittenCompResponse {
+  exam_type: string;
+  data: WrittenCompExamData;
+}
