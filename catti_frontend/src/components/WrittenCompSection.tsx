@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerateWrittenCompResponse } from '../types';
 import { generateWrittenComp, saveExamRecord } from '../api';
-import { FileText, AlertCircle, List, Play, Save } from 'lucide-react';
+import { FileText, AlertCircle, List, Play, Save, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WrittenCompSectionProps {
   provider: 'deepseek' | 'mimo';
@@ -21,6 +21,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
   const [examState, setExamState] = useState<'input' | 'taking' | 'results'>('input');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [score, setScore] = useState<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (initialRecord) {
@@ -32,6 +33,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
         setAnswers(initialRecord.answers);
       }
       setExamState('results');
+      setIsSidebarOpen(false);
       calculateScore(initialRecord.result, initialRecord.answers || {});
     }
   }, [initialRecord]);
@@ -62,6 +64,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
       });
       setResult(data);
       setExamState('taking');
+      setIsSidebarOpen(false);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred during generation.');
     } finally {
@@ -181,9 +184,33 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
 
   return (
     <div className="w-full flex-1 flex flex-col lg:flex-row gap-6 relative">
+      {/* Floating Expand Button when collapsed */}
+      {!isSidebarOpen && result && (
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-50 flex items-center group">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="h-20 px-2 bg-slate-800 text-slate-300 rounded-r-md flex items-center justify-center shadow-2xl hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+            title="Show Source Text"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+
       {/* Left Input Section */}
-      <section className={`${!result ? 'flex-1' : 'w-[30%]'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-all duration-500 relative shrink-0 overflow-y-auto`}>
-        <div className="flex flex-col space-y-6 h-full">
+      <section className={`${!result ? 'flex-1' : isSidebarOpen ? 'w-[30%]' : 'hidden'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-all duration-500 relative shrink-0 overflow-hidden`}>
+        {/* Toggle Button */}
+        {result && (
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="absolute top-4 right-4 p-1.5 bg-slate-100 text-slate-500 rounded hover:bg-slate-200 transition-colors z-10"
+            title="Hide Source Text"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
+
+        <div className="flex flex-col space-y-6 h-full overflow-y-auto">
           
           <div className="flex flex-col flex-1">
             <label className="text-sm font-semibold text-slate-700 tracking-wide uppercase mb-2 flex items-center">
@@ -244,6 +271,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
                 setExamState('input');
                 setScore(null);
                 setAnswers({});
+                setIsSidebarOpen(true);
               }}
               className="w-full py-4 px-6 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-lg tracking-wide transition-all flex items-center justify-center space-x-2 shrink-0"
             >
@@ -255,7 +283,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
 
       {/* Right Exam Section */}
       {result && (
-        <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500">
+        <section className={`${isSidebarOpen ? 'w-[70%]' : 'flex-1'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500`}>
           <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100 text-purple-600">
