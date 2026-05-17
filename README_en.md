@@ -11,20 +11,27 @@ The CATTI Exam / Foreign Language Translation Training Assistant is a smart full
 ### 1. 📝 Written Translation Smart Grading
 - **Immersive Dual-Column Input**: Supports side-by-side input of source text and translation, featuring a built-in focus countdown hourglass.
 - **AI In-depth Grading**: After submission, the AI automatically compares the source text with your translation, generating detailed scoring and improvement suggestions at the "vocabulary" and "syntax" levels.
-- **Custom Models**: Supports configuring and integrating various large language models (such as DeepSeek) as the smart grading engine.
 
-### 2. 🎧 Interpretation Realistic Simulation
+### 2. 📝 Written Comprehensive Mode
+Instantly converts any three pieces of Chinese/English texts into a written comprehensive exam paper.
+- **Vocabulary & Grammar**: Generates up to 60 multiple-choice questions based on the source text, supports interactive clicking, highlights correct answers, and provides detailed explanations after submission.
+- **Reading Comprehension**: Generates reading questions (multiple passages) with interactive answers and automatic grading.
+- **Cloze Test**: Automatically creates cloze tests with 4 options per blank, supporting interactive answering.
+- **Anti-cheating & Self-test**: Source texts are automatically folded and hidden during the exam. After submission, the total score is automatically calculated and incorrect answers are explained.
+
+### 3. 🎧 Interpretation Realistic Simulation
 Instantly converts any piece of Chinese/English text into a practical interpretation exam paper with audio.
 - **Comprehensive Ability**:
+  - Supports separate input for true/false, multiple-choice, and summary listening source texts.
   - Automatically generates highly deceptive true/false and multiple-choice questions (using techniques like phonetic confusion, time/space inversion, etc.).
   - Automatically extracts 5 key scoring points for summary questions.
-  - **Interactive Grading**: Click options to answer. After submission, it visually displays red/green right/wrong highlight feedback, along with detailed explanations.
+  - **Interactive Grading & Sectional Listening**: Click options to answer. After submission, it visually displays red/green right/wrong highlight feedback, along with detailed explanations. Each section has its own independent audio play button.
 - **Practice Ability**:
   - **Intelligent Semantic Chunking**: The AI automatically chunks long texts into audio paragraphs suitable for memory, based on the pausing habits of professional interpreters.
   - **Hidden Anti-cheating Design**: The source text is automatically folded and hidden during the exam. Only a play button is suspended in the center of the screen, eliminating "sight translation" cheating.
   - **Self-test Comparison**: You can directly input your translation under each chunk, and compare it with the source text up and down after submission for an efficient review.
 
-### 3. 💾 Smart History Archive
+### 4. 💾 Smart History Archive
 - **No Records Lost**: All exam records, user-filled translations, and interactive answer options are fully saved in the database (SQLite).
 - **Zero-latency Review**: Features an original TTS voice caching mechanism. Historically generated recordings are saved along with the exam paper in Base64 format. When viewing again, they can be played directly locally without repeatedly consuming API quotas or waiting time.
 
