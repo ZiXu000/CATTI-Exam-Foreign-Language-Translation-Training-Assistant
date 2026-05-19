@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { GraderResponse, EvaluationItem } from '../types';
 import { DeductionCard } from './DeductionCard';
-import { FileText, BookOpen, CheckCircle, Download } from 'lucide-react';
+import { FileText, BookOpen, CheckCircle, Download, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 interface ResultSectionProps {
@@ -93,16 +93,23 @@ export const ResultSection: React.FC<ResultSectionProps> = ({ result, error, isL
   const scoreColor = result.final_score >= 80 ? 'text-green-500' : result.final_score >= 60 ? 'text-amber-500' : 'text-red-500';
 
   return (
-    <div className="h-full flex flex-col bg-slate-50/50">
-      <div ref={containerRef} className="flex flex-col h-full bg-white relative">
+    <div className="h-full flex flex-col bg-slate-50/50 print:bg-transparent">
+      <div ref={containerRef} className="flex flex-col h-full bg-white relative print:bg-transparent">
         {/* Header & Score */}
-        <div className="bg-white p-6 border-b border-slate-200 shadow-sm shrink-0">
+        <div className="bg-white p-6 border-b border-slate-200 shadow-sm shrink-0 print:bg-transparent print:border-none print:p-0 print:mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wide">{t.evalReportTitle}</h2>
               <p className="text-sm text-slate-500 mt-1">{t.evalReportSubtitle}</p>
             </div>
             <div className="flex items-center space-x-6">
+              <button
+                onClick={() => window.print()}
+                className="print:hidden flex items-center space-x-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium border border-slate-200"
+              >
+                <Printer size={14} />
+                <span>{t.exportPDF}</span>
+              </button>
               <div className="text-right">
                 <div className="text-5xl font-black tracking-tighter">
                   <span className={scoreColor}>{result.final_score.toFixed(1)}</span>
@@ -114,7 +121,7 @@ export const ResultSection: React.FC<ResultSectionProps> = ({ result, error, isL
         </div>
 
         {/* Tabs & Export Button */}
-        <div className="bg-white px-6 border-b border-slate-200 shrink-0 flex items-center justify-between">
+        <div className="bg-white px-6 border-b border-slate-200 shrink-0 flex items-center justify-between print:hidden">
           <div className="flex space-x-6">
             <button
               onClick={() => setActiveTab('report')}

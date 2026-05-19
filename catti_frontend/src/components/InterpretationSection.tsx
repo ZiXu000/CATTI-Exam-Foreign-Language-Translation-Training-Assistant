@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerateExamResponse } from '../types';
 import { generateExam, generateTTS, saveExamRecord } from '../api';
-import { FileText, CheckCircle2, AlertCircle, List, Play, Volume2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, CheckCircle2, AlertCircle, List, Play, Volume2, Save, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 
 interface InterpretationSectionProps {
   provider: 'deepseek' | 'mimo';
@@ -389,7 +389,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
       )}
 
       {/* Left Input Section */}
-      <section className={`${!result ? 'flex-1' : isSidebarOpen ? 'w-[40%]' : 'hidden'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 relative shrink-0 overflow-hidden`}>
+      <section className={`${!result ? 'flex-1' : isSidebarOpen ? 'w-[40%]' : 'hidden'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 relative shrink-0 overflow-hidden print:hidden`}>
         {/* Toggle Button */}
         {result && (
           <button 
@@ -508,10 +508,10 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
       </section>
 
       {result && (
-        <section className={`${isSidebarOpen ? 'w-[60%]' : 'flex-1'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500`}>
-          <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <section className={`${isSidebarOpen ? 'w-[60%]' : 'flex-1'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500 print:w-full print:border-none print:shadow-none print:overflow-visible`}>
+          <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between shrink-0 print:bg-transparent print:border-none print:p-0 print:mb-6">
             <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.exam_type === '口译综合能力' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.exam_type === '口译综合能力' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'} print:hidden`}>
                 <List size={18} />
               </div>
               <div>
@@ -519,7 +519,14 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
                 <p className="text-xs text-slate-500 mt-1">{result.exam_type}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 print:hidden">
+               <button
+                 onClick={() => window.print()}
+                 className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium border border-slate-200"
+               >
+                 <Printer size={14} />
+                 <span>{t.exportPDF}</span>
+               </button>
                <button 
                  onClick={handleSaveToHistory}
                  className="flex items-center space-x-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors text-sm font-medium"
@@ -534,7 +541,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 print:overflow-visible">
             {result.exam_type === '口译综合能力' && result.questions && (
               <div className="space-y-12">
                 <div>
@@ -544,7 +551,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
                       <button
                         onClick={() => handlePlayTTS('tf-transcript', tfTranscript)}
                         disabled={playingAudioId === 'tf-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
                       >
                         <Volume2 size={14} className={playingAudioId === 'tf-transcript' ? "animate-pulse" : ""} />
                         <span>Play Audio</span>
@@ -561,7 +568,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
                       <button
                         onClick={() => handlePlayTTS('mc-transcript', mcTranscript)}
                         disabled={playingAudioId === 'mc-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
                       >
                         <Volume2 size={14} className={playingAudioId === 'mc-transcript' ? "animate-pulse" : ""} />
                         <span>Play Audio</span>
@@ -579,7 +586,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
                       <button
                         onClick={() => handlePlayTTS('sum-transcript', sumTranscript)}
                         disabled={playingAudioId === 'sum-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium"
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
                       >
                         <Volume2 size={14} className={playingAudioId === 'sum-transcript' ? "animate-pulse" : ""} />
                         <span>Play Audio</span>
@@ -598,7 +605,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
             )}
             
             {examState === 'taking' && (
-              <div className="mt-8 flex justify-center pb-8">
+              <div className="mt-8 flex justify-center pb-8 print:hidden">
                 <button
                   onClick={handleSubmitExam}
                   className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all uppercase tracking-wide"
@@ -610,7 +617,7 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
           </div>
           
           {audioSrc && (
-            <div className="bg-slate-50 border-t border-slate-200 p-4 sticky bottom-0 z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+            <div className="bg-slate-50 border-t border-slate-200 p-4 sticky bottom-0 z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] print:hidden">
               <audio 
                 controls 
                 autoPlay 

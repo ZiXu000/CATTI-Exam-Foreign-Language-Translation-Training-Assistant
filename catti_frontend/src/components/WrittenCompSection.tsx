@@ -283,17 +283,24 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
 
       {/* Right Exam Section */}
       {result && (
-        <section className={`${isSidebarOpen ? 'w-[70%]' : 'flex-1'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500`}>
-          <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <section className={`${isSidebarOpen ? 'w-[70%]' : 'flex-1'} flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500 print:w-full print:border-none print:shadow-none print:overflow-visible`}>
+          <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between shrink-0 print:bg-transparent print:border-none print:p-0 print:mb-6">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100 text-purple-600">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100 text-purple-600 print:hidden">
                 <List size={18} />
               </div>
               <div>
                 <h2 className="font-black text-slate-800 tracking-tight leading-none">{result.exam_type}</h2>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 print:hidden">
+               <button
+                 onClick={() => window.print()}
+                 className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition-colors text-sm font-medium border border-slate-200"
+               >
+                 <Printer size={14} />
+                 <span>{t.exportPDF}</span>
+               </button>
                <button 
                  onClick={handleSaveToHistory}
                  className="flex items-center space-x-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors text-sm font-medium"

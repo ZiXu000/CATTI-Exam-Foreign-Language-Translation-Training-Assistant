@@ -167,8 +167,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-      <header className="bg-slate-900 text-white shadow-md z-20 shrink-0">
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans print:bg-white">
+      <header className="bg-slate-900 text-white shadow-md z-20 shrink-0 print:hidden">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
             {currentPage !== 'home' && (
@@ -266,10 +266,10 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 w-full mx-auto p-6 flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-80px)] overflow-hidden transition-all duration-500">
+      <main className="flex-1 w-full mx-auto p-6 flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-80px)] overflow-hidden transition-all duration-500 print:p-0 print:h-auto print:overflow-visible">
         
         {currentPage === 'home' && (
-          <div className="flex-1 flex flex-col items-center overflow-y-auto pb-12">
+          <div className="flex-1 flex flex-col items-center overflow-y-auto pb-12 print:hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full mt-12">
               <button 
                 onClick={() => setCurrentPage('written')}
@@ -407,9 +407,9 @@ function App() {
         )}
 
         {currentPage === 'written' && (
-          <div className="flex-1 relative flex flex-col h-full overflow-hidden">
+          <div className="flex-1 relative flex flex-col h-full overflow-hidden print:overflow-visible">
             {/* Mode Switcher inside Written Page */}
-            <div className="flex justify-center mb-6 shrink-0">
+            <div className="flex justify-center mb-6 shrink-0 print:hidden">
               <div className="bg-slate-200 p-1 rounded-lg inline-flex">
                 <button
                   onClick={() => setWrittenMode('translate')}
@@ -427,10 +427,10 @@ function App() {
             </div>
 
             {writtenMode === 'translate' ? (
-              <div className="flex-1 relative flex flex-col lg:flex-row gap-6 min-h-0">
+              <div className="flex-1 relative flex flex-col lg:flex-row gap-6 min-h-0 print:block print:h-auto">
                 {/* Start Timer overlay if Timer is enabled and not active */}
                 {timerEnabled && !examActive && !result && !isLoading && !error && (
-                  <div className="absolute inset-0 z-50 flex flex-col items-center justify-center space-y-8 p-12 text-center bg-slate-50/95 backdrop-blur-sm rounded-xl border border-slate-200">
+                  <div className="absolute inset-0 z-50 flex flex-col items-center justify-center space-y-8 p-12 text-center bg-slate-50/95 backdrop-blur-sm rounded-xl border border-slate-200 print:hidden">
                     <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shadow-inner">
                       <Timer size={48} />
                     </div>
@@ -450,7 +450,7 @@ function App() {
 
                 {/* Editing Layout (No Result, Not Loading) */}
                 {(!result && !isLoading && !error) ? (
-                  <div className="w-full flex-1 flex gap-6">
+                  <div className="w-full flex-1 flex gap-6 print:hidden">
                     <section className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden">
                       <div className="flex flex-col space-y-2 flex-1 relative">
                         <label htmlFor="userTranslation" className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
@@ -498,8 +498,8 @@ function App() {
                   </div>
                 ) : (
                   /* Evaluation Phase Layout (40% Input Stacked, 60% Report) */
-                  <div className="w-full flex-1 flex gap-6 min-h-0">
-                    <section className="w-[40%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-y-auto">
+                  <div className="w-full flex-1 flex gap-6 min-h-0 print:block print:h-auto">
+                    <section className="w-[40%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-y-auto print:w-full print:mb-6 print:border-none print:shadow-none print:overflow-visible">
                       <InputSection
                         sourceText={sourceText}
                         setSourceText={setSourceText}
@@ -514,7 +514,7 @@ function App() {
                       />
                     </section>
 
-                    <section className="w-[60%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500">
+                    <section className="w-[60%] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-500 print:w-full print:border-none print:shadow-none print:overflow-visible">
                       <ResultSection
                         result={result}
                         error={error}
@@ -526,7 +526,7 @@ function App() {
 
                     {/* Floating Action Button for Retake */}
                     {!isLoading && (
-                      <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group">
+                      <div className="fixed right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%-40px)] hover:translate-x-0 transition-transform duration-300 z-40 flex items-center h-24 group print:hidden">
                         <div className="bg-slate-800 text-white w-[40px] h-full rounded-l-xl shadow-xl flex items-center justify-center cursor-pointer group-hover:bg-slate-700">
                           <span className="[writing-mode:vertical-lr] font-bold text-sm tracking-widest uppercase rotate-180 whitespace-nowrap">{t.retakeAction}</span>
                         </div>
