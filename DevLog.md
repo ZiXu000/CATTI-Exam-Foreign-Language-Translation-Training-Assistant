@@ -16,3 +16,12 @@
 2. Automate dependency vulnerability scanning (e.g., Dependabot).
 3. Containerize the application (Docker) to ensure environment consistency.
 4. Establish staging and production deployment pipelines (e.g., Vercel for frontend, Render/Railway for backend).
+
+### [Delivery Doc] Fix Blank Screen in Written Comp Mode
+**Impact:**
+- Resolved an issue where "Written Comprehensive" mode would display a blank screen (white screen) when LLM returns slightly malformed JSON, and prevents frontend crashes if missing partial sections.
+
+**Steps Completed:**
+1. Added `json-repair` library to `requirements.txt` to robustly parse JSON from LLMs, replacing strict `json.loads` in `written_comp_llm_service.py`, `interpreter_llm_service.py`, and `llm_service.py`.
+2. Added safe navigation operators (`?.`) and fallback values to React components (`WrittenCompSection.tsx`, `InterpretationSection.tsx`) to prevent uncaught exceptions.
+3. Enforced a 500 error in the backend if all exam sections fail to generate, so the frontend correctly renders a "Generation Failed" error boundary instead of a blank exam.

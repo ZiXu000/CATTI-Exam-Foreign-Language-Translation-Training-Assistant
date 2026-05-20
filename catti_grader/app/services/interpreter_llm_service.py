@@ -2,6 +2,7 @@ import json
 import re
 import asyncio
 from openai import AsyncOpenAI
+import json_repair
 from app.schemas.interpreter_schema import GenerateExamRequest, GenerateExamResponse, ComprehensiveExamData, PracticeExamData, TrueFalseQuestion, MultipleChoiceQuestion, SummaryRubric
 
 PROMPT_TF = """You are an Expert CATTI Interpretation Examiner for Level 2.
@@ -88,7 +89,7 @@ async def safe_call_llm(client: AsyncOpenAI, model: str, system_prompt: str, use
             extra_body=extra_body,
             temperature=0.3
         )
-        return json.loads(_clean_json_string(response.choices[0].message.content))
+        return json_repair.loads(_clean_json_string(response.choices[0].message.content))
     except Exception as e:
         print(f"Error calling LLM: {e}")
         return {}
@@ -117,7 +118,7 @@ async def generate_exam(request: GenerateExamRequest) -> GenerateExamResponse:
                 extra_body=extra_body,
                 temperature=0.3
             )
-            parsed_data = json.loads(_clean_json_string(response.choices[0].message.content))
+            parsed_data = json_repair.loads(_clean_json_string(response.choices[0].message.content))
             return GenerateExamResponse(**parsed_data)
         except Exception as e:
             raise ValueError(f"LLM API Error: {str(e)}")

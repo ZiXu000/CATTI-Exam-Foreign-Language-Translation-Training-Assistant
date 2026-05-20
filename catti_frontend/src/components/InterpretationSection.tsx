@@ -544,63 +544,69 @@ export const InterpretationSection: React.FC<InterpretationSectionProps> = ({ pr
           <div className="flex-1 overflow-y-auto p-6 print:overflow-visible">
             {result.exam_type === '口译综合能力' && result.questions && (
               <div className="space-y-12">
-                <div>
-                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
-                    <h3 className="font-black text-xl text-slate-800">{t.trueFalseQuestions}</h3>
-                    {tfTranscript.trim() && (
-                      <button
-                        onClick={() => handlePlayTTS('tf-transcript', tfTranscript)}
-                        disabled={playingAudioId === 'tf-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
-                      >
-                        <Volume2 size={14} className={playingAudioId === 'tf-transcript' ? "animate-pulse" : ""} />
-                        <span>Play Audio</span>
-                      </button>
-                    )}
+                {(result.questions.true_or_false?.length ?? 0) > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                      <h3 className="font-black text-xl text-slate-800">{t.trueFalseQuestions}</h3>
+                      {tfTranscript.trim() && (
+                        <button
+                          onClick={() => handlePlayTTS('tf-transcript', tfTranscript)}
+                          disabled={playingAudioId === 'tf-transcript'}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
+                        >
+                          <Volume2 size={14} className={playingAudioId === 'tf-transcript' ? "animate-pulse" : ""} />
+                          <span>Play Audio</span>
+                        </button>
+                      )}
+                    </div>
+                    {renderTrueFalse(result.questions.true_or_false)}
                   </div>
-                  {renderTrueFalse(result.questions.true_or_false)}
-                </div>
+                )}
 
-                <div>
-                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
-                    <h3 className="font-black text-xl text-slate-800">Multiple Choice</h3>
-                    {mcTranscript.trim() && (
-                      <button
-                        onClick={() => handlePlayTTS('mc-transcript', mcTranscript)}
-                        disabled={playingAudioId === 'mc-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
-                      >
-                        <Volume2 size={14} className={playingAudioId === 'mc-transcript' ? "animate-pulse" : ""} />
-                        <span>Play Audio</span>
-                      </button>
-                    )}
+                {((result.questions.multiple_choice_short?.length ?? 0) > 0 || (result.questions.multiple_choice_passage?.length ?? 0) > 0) && (
+                  <div>
+                    <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                      <h3 className="font-black text-xl text-slate-800">Multiple Choice</h3>
+                      {mcTranscript.trim() && (
+                        <button
+                          onClick={() => handlePlayTTS('mc-transcript', mcTranscript)}
+                          disabled={playingAudioId === 'mc-transcript'}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
+                        >
+                          <Volume2 size={14} className={playingAudioId === 'mc-transcript' ? "animate-pulse" : ""} />
+                          <span>Play Audio</span>
+                        </button>
+                      )}
+                    </div>
+                    {renderMultipleChoice(t.multipleChoiceShort, result.questions.multiple_choice_short || [])}
+                    {renderMultipleChoice(t.multipleChoicePassage, result.questions.multiple_choice_passage || [])}
                   </div>
-                  {renderMultipleChoice(t.multipleChoiceShort, result.questions.multiple_choice_short)}
-                  {renderMultipleChoice(t.multipleChoicePassage, result.questions.multiple_choice_passage)}
-                </div>
+                )}
 
-                <div>
-                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
-                    <h3 className="font-black text-xl text-slate-800">{t.summaryRubricTitle}</h3>
-                    {sumTranscript.trim() && (
-                      <button
-                        onClick={() => handlePlayTTS('sum-transcript', sumTranscript)}
-                        disabled={playingAudioId === 'sum-transcript'}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
-                      >
-                        <Volume2 size={14} className={playingAudioId === 'sum-transcript' ? "animate-pulse" : ""} />
-                        <span>Play Audio</span>
-                      </button>
-                    )}
+                {result.questions.summary_rubric && (
+                  <div>
+                    <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
+                      <h3 className="font-black text-xl text-slate-800">{t.summaryRubricTitle}</h3>
+                      {sumTranscript.trim() && (
+                        <button
+                          onClick={() => handlePlayTTS('sum-transcript', sumTranscript)}
+                          disabled={playingAudioId === 'sum-transcript'}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-sm font-medium print:hidden"
+                        >
+                          <Volume2 size={14} className={playingAudioId === 'sum-transcript' ? "animate-pulse" : ""} />
+                          <span>Play Audio</span>
+                        </button>
+                      )}
+                    </div>
+                    {renderSummaryRubric(result.questions.summary_rubric)}
                   </div>
-                  {renderSummaryRubric(result.questions.summary_rubric)}
-                </div>
+                )}
               </div>
             )}
             
-            {result.exam_type === '口译实务' && result.practice_data && (
+            {result.exam_type === '口译实务' && (result.practice_data?.chunks?.length ?? 0) > 0 && (
               <>
-                {renderChunks(result.practice_data.chunks)}
+                {renderChunks(result.practice_data!.chunks)}
               </>
             )}
             

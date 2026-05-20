@@ -2,6 +2,7 @@ import json
 import re
 import asyncio
 from openai import AsyncOpenAI
+import json_repair
 from app.schemas.written_comp_schema import (
     GenerateWrittenCompRequest,
     GenerateWrittenCompResponse,
@@ -52,7 +53,8 @@ async def generate_vocab_grammar(client: AsyncOpenAI, model_name: str, text: str
         **extra_kwargs
     )
     res_text = completion.choices[0].message.content
-    return VocabGrammarData(**json.loads(_clean_json_string(res_text)))
+    parsed_json = json_repair.loads(_clean_json_string(res_text))
+    return VocabGrammarData(**parsed_json)
 
 async def generate_reading(client: AsyncOpenAI, model_name: str, text: str, extra_kwargs: dict) -> ReadingComprehensionData:
     prompt = f"""
@@ -94,7 +96,8 @@ async def generate_reading(client: AsyncOpenAI, model_name: str, text: str, extr
         **extra_kwargs
     )
     res_text = completion.choices[0].message.content
-    return ReadingComprehensionData(**json.loads(_clean_json_string(res_text)))
+    parsed_json = json_repair.loads(_clean_json_string(res_text))
+    return ReadingComprehensionData(**parsed_json)
 
 async def generate_cloze(client: AsyncOpenAI, model_name: str, text: str, extra_kwargs: dict) -> ClozeTestData:
     prompt = f"""
@@ -131,7 +134,8 @@ async def generate_cloze(client: AsyncOpenAI, model_name: str, text: str, extra_
         **extra_kwargs
     )
     res_text = completion.choices[0].message.content
-    return ClozeTestData(**json.loads(_clean_json_string(res_text)))
+    parsed_json = json_repair.loads(_clean_json_string(res_text))
+    return ClozeTestData(**parsed_json)
 
 async def generate_written_comp_exam(request: GenerateWrittenCompRequest) -> GenerateWrittenCompResponse:
     if request.provider == "deepseek":
@@ -165,6 +169,10 @@ async def generate_written_comp_exam(request: GenerateWrittenCompRequest) -> Gen
     cloze_task = safe_gen(generate_cloze(client, model_name, request.cloze_text, extra_kwargs)) if request.cloze_text.strip() else asyncio.sleep(0)
 
     vocab_res, reading_res, cloze_res = await asyncio.gather(vocab_task, reading_task, cloze_task)
+
+    if vocab_res is None and reading_res is None and cloze_res is None:
+        if request.vocab_text.strip() or request.reading_text.strip() or request.cloze_text.strip():
+            raise ValueError("Failed to generate any exam sections. The LLM may have returned malformed data.")
 
     data = WrittenCompExamData(
         vocab_grammar=vocab_res,

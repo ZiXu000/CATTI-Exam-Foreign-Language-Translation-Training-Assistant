@@ -1,6 +1,7 @@
 import json
 import random
 from openai import AsyncOpenAI
+import json_repair
 from app.schemas.grader import TranslationRequest, GraderResponse
 
 PAPER_TOWN_TRAP = (
@@ -133,7 +134,7 @@ async def grade_translation(request: TranslationRequest) -> GraderResponse:
         # Simplify the aggressive regex that breaks valid JSON keys
         # We'll just rely on the first two regexes and the prompt constraint for now.
         
-        parsed_data = json.loads(cleaned_content.strip())
+        parsed_data = json_repair.loads(cleaned_content.strip())
         return GraderResponse(**parsed_data)
-    except json.JSONDecodeError as e:
+    except Exception as e:
         raise ValueError(f"Failed to parse JSON from LLM response: {e}\nContent: {response_content}")
