@@ -96,28 +96,28 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
     let total = 0;
     
     // Vocab (1 pt each)
-    if (examResult.data.vocab_grammar?.questions) {
+    if (examResult?.data?.vocab_grammar?.questions) {
       examResult.data.vocab_grammar.questions.forEach(q => {
-        const correctOpt = q.options[q.correct];
-        if (currentAnswers[`vocab_${q.id}`] === correctOpt) total += 1;
+        const correctOpt = q.options ? q.options[q.correct || 0] : undefined;
+        if (correctOpt && currentAnswers[`vocab_${q.id}`] === correctOpt) total += 1;
       });
     }
 
     // Reading (1 pt each)
-    if (examResult.data.reading?.passages) {
+    if (examResult?.data?.reading?.passages) {
       examResult.data.reading.passages.forEach(p => {
         p.questions?.forEach(q => {
-          const correctOpt = q.options[q.correct];
-          if (currentAnswers[`read_${p.passageId}_${q.id}`] === correctOpt) total += 1;
+          const correctOpt = q.options ? q.options[q.correct || 0] : undefined;
+          if (correctOpt && currentAnswers[`read_${p.passageId}_${q.id}`] === correctOpt) total += 1;
         });
       });
     }
 
     // Cloze (0.5 pt each)
-    if (examResult.data.cloze?.passage?.blanks) {
+    if (examResult?.data?.cloze?.passage?.blanks) {
       examResult.data.cloze.passage.blanks.forEach(b => {
-        const correctOpt = b.options[b.correct];
-        if (currentAnswers[`cloze_${b.position}`] === correctOpt) total += 0.5;
+        const correctOpt = b.options ? b.options[b.correct || 0] : undefined;
+        if (correctOpt && currentAnswers[`cloze_${b.position}`] === correctOpt) total += 0.5;
       });
     }
 
@@ -133,7 +133,7 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
 
   const renderOptions = (answerKey: string, options: string[], correctIndex: number, explanation?: string) => {
     const userAnswer = answers[answerKey];
-    const correctOpt = options[correctIndex];
+    const correctOpt = options[correctIndex || 0];
     const isCorrect = userAnswer === correctOpt;
 
     return (
