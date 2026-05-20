@@ -96,27 +96,31 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
     let total = 0;
     
     // Vocab (1 pt each)
-    if (examResult?.data?.vocab_grammar?.questions) {
+    if (Array.isArray(examResult?.data?.vocab_grammar?.questions)) {
       examResult.data.vocab_grammar.questions.forEach(q => {
-        const correctOpt = q.options ? q.options[q.correct || 0] : undefined;
+        if (!q) return;
+        const correctOpt = Array.isArray(q.options) ? q.options[q.correct || 0] : undefined;
         if (correctOpt && currentAnswers[`vocab_${q.id}`] === correctOpt) total += 1;
       });
     }
 
     // Reading (1 pt each)
-    if (examResult?.data?.reading?.passages) {
+    if (Array.isArray(examResult?.data?.reading?.passages)) {
       examResult.data.reading.passages.forEach(p => {
-        p.questions?.forEach(q => {
-          const correctOpt = q.options ? q.options[q.correct || 0] : undefined;
+        if (!p || !Array.isArray(p.questions)) return;
+        p.questions.forEach(q => {
+          if (!q) return;
+          const correctOpt = Array.isArray(q.options) ? q.options[q.correct || 0] : undefined;
           if (correctOpt && currentAnswers[`read_${p.passageId}_${q.id}`] === correctOpt) total += 1;
         });
       });
     }
 
     // Cloze (0.5 pt each)
-    if (examResult?.data?.cloze?.passage?.blanks) {
+    if (Array.isArray(examResult?.data?.cloze?.passage?.blanks)) {
       examResult.data.cloze.passage.blanks.forEach(b => {
-        const correctOpt = b.options ? b.options[b.correct || 0] : undefined;
+        if (!b) return;
+        const correctOpt = Array.isArray(b.options) ? b.options[b.correct || 0] : undefined;
         if (correctOpt && currentAnswers[`cloze_${b.position}`] === correctOpt) total += 0.5;
       });
     }
@@ -133,13 +137,14 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
 
   const renderOptions = (answerKey: string, options: string[], correctIndex: number, explanation?: string) => {
     const userAnswer = answers[answerKey];
-    const correctOpt = options[correctIndex || 0];
+    const safeOptions = Array.isArray(options) ? options : [];
+    const correctOpt = safeOptions[correctIndex || 0];
     const isCorrect = userAnswer === correctOpt;
 
     return (
       <>
         <div className="space-y-2 mb-4">
-          {options.map((opt: string, i: number) => {
+          {safeOptions.map((opt: string, i: number) => {
             const isThisOptionCorrect = i === correctIndex;
             const isThisOptionSelected = userAnswer === opt;
             
@@ -320,66 +325,78 @@ export const WrittenCompSection: React.FC<WrittenCompSectionProps> = ({ provider
           <div className="flex-1 overflow-y-auto p-6 space-y-12">
             
             {/* Vocab Section */}
-            {(result.data?.vocab_grammar?.questions?.length ?? 0) > 0 && (
+            {Array.isArray(result.data?.vocab_grammar?.questions) && result.data!.vocab_grammar!.questions.length > 0 && (
               <div>
                 <h3 className="font-black text-xl text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">{t.vocabGrammarTitle}</h3>
                 <div className="space-y-6">
-                  {result.data.vocab_grammar!.questions.map((q, idx) => (
-                    <div key={`vocab_${q.id}`} className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                      <p className="font-medium text-slate-800 mb-4 text-lg">
-                        <span className="mr-2 text-slate-400">{idx + 1}.</span>
-                        {q.stem}
-                      </p>
-                      {renderOptions(`vocab_${q.id}`, q.options || [], q.correct || 0, q.explanation)}
-                    </div>
-                  ))}
+                  {result.data!.vocab_grammar!.questions.map((q, idx) => {
+                    if (!q) return null;
+                    return (
+                      <div key={`vocab_${q.id}`} className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <p className="font-medium text-slate-800 mb-4 text-lg">
+                          <span className="mr-2 text-slate-400">{idx + 1}.</span>
+                          {q.stem}
+                        </p>
+                        {renderOptions(`vocab_${q.id}`, Array.isArray(q.options) ? q.options : [], q.correct || 0, q.explanation)}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Reading Section */}
-            {(result.data?.reading?.passages?.length ?? 0) > 0 && (
+            {Array.isArray(result.data?.reading?.passages) && result.data!.reading!.passages.length > 0 && (
               <div>
                 <h3 className="font-black text-xl text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">{t.readingComprehensionTitle}</h3>
                 <div className="space-y-10">
-                  {result.data.reading!.passages.map((passage, pIdx) => (
-                    <div key={`read_p_${passage.passageId}`} className="border border-slate-200 rounded-xl overflow-hidden">
-                      <div className="bg-slate-100 p-5 border-b border-slate-200">
-                        <h4 className="font-bold text-lg text-slate-800 mb-3">Passage {pIdx + 1}: {passage.title}</h4>
-                        <p className="text-slate-700 leading-relaxed font-serif whitespace-pre-wrap">{passage.content}</p>
+                  {result.data!.reading!.passages.map((passage, pIdx) => {
+                    if (!passage) return null;
+                    return (
+                      <div key={`read_p_${passage.passageId}`} className="border border-slate-200 rounded-xl overflow-hidden">
+                        <div className="bg-slate-100 p-5 border-b border-slate-200">
+                          <h4 className="font-bold text-lg text-slate-800 mb-3">Passage {pIdx + 1}: {passage.title}</h4>
+                          <p className="text-slate-700 leading-relaxed font-serif whitespace-pre-wrap">{passage.content}</p>
+                        </div>
+                        <div className="p-5 space-y-6 bg-slate-50">
+                          {Array.isArray(passage.questions) && passage.questions.map((q, qIdx) => {
+                            if (!q) return null;
+                            return (
+                              <div key={`read_${passage.passageId}_${q.id}`}>
+                                <p className="font-medium text-slate-800 mb-3">
+                                  <span className="mr-2 text-slate-400">{qIdx + 1}.</span>
+                                  {q.stem}
+                                </p>
+                                {renderOptions(`read_${passage.passageId}_${q.id}`, Array.isArray(q.options) ? q.options : [], q.correct || 0, `${q.explanation} (Location: ${q.location})`)}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="p-5 space-y-6 bg-slate-50">
-                        {passage.questions?.map((q, qIdx) => (
-                          <div key={`read_${passage.passageId}_${q.id}`}>
-                            <p className="font-medium text-slate-800 mb-3">
-                              <span className="mr-2 text-slate-400">{qIdx + 1}.</span>
-                              {q.stem}
-                            </p>
-                            {renderOptions(`read_${passage.passageId}_${q.id}`, q.options || [], q.correct || 0, `${q.explanation} (Location: ${q.location})`)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Cloze Section */}
-            {result.data?.cloze?.passage?.blanks && (
+            {Array.isArray(result.data?.cloze?.passage?.blanks) && (
               <div>
                 <h3 className="font-black text-xl text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">{t.clozeTestTitle}</h3>
                 <div className="border border-slate-200 rounded-xl overflow-hidden">
                   <div className="bg-slate-100 p-6 border-b border-slate-200">
-                    <p className="text-slate-800 leading-relaxed font-serif whitespace-pre-wrap text-lg">{result.data.cloze.passage.content}</p>
+                    <p className="text-slate-800 leading-relaxed font-serif whitespace-pre-wrap text-lg">{result.data!.cloze!.passage.content}</p>
                   </div>
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50">
-                    {result.data.cloze.passage.blanks.map((b) => (
-                      <div key={`cloze_${b.position}`} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                        <p className="font-bold text-slate-700 mb-3">Blank ({b.position})</p>
-                        {renderOptions(`cloze_${b.position}`, b.options || [], b.correct || 0, b.explanation)}
-                      </div>
-                    ))}
+                    {result.data!.cloze!.passage.blanks.map((b) => {
+                      if (!b) return null;
+                      return (
+                        <div key={`cloze_${b.position}`} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                          <p className="font-bold text-slate-700 mb-3">Blank ({b.position})</p>
+                          {renderOptions(`cloze_${b.position}`, Array.isArray(b.options) ? b.options : [], b.correct || 0, b.explanation)}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
